@@ -1,0 +1,147 @@
+Model/Formについて
+
+Djangoでデータを扱うものとして大きく分けて3つの種類がある
+Model データベースにデータを扱う際に使われる。
+Form お問い合わせフォームのように、データは保存せず、デー
+　　　タのやり取りを行う際に使われる
+ModelForm 名前の通り、ModelとFormの両方の性質を持って
+　　　　　　いる
+
+modelとは
+ データベースに対応しており、モデルクラスにテーブルを定義し
+ クラスの中に対応する列を定義する
+ 
+ Djangoではクラスでモデルを定義した場合、PRIMARY KEYが
+ セットされたIDの列デフォルトで定義される
+
+modelでのビジネスロジックの実装
+ 定義したモデルクラス内で、定義した列の処理方法を関数として
+ まとめてテンプレートで利用することができる
+
+データベースの設定
+ settingファイルに書かれており、データベースの設定を
+ 管理する
+
+ 
+Modelクラスの設計
+ モデルクラスを設計する場合
+  from django.db import models
+  からmodels.Modelsを継承する
+
+ 変数を定義し、データベースのデータ型を指定し代入
+ 継承したmodelsクラスからフィールドを指定することでデータ
+ 型を定義
+ フィールドに引数を入れることでデータを作成する際の細かい
+ 条件を指定できる
+ 例
+ title = models.CharField(max_length=100)
+ 文字列型のCharFieldを定義し、最大文字数を100に指定
+
+定義したmodelをデータベースに反映させる
+ makemigrationsコマンドとmigrateコマンド
+
+ makemigrations
+  modelsファイルの記載内容に基づいてデータベースの設計図
+  のようなファイルを作成するために使われるコマンド
+  実行されると新しいファイルが作成される
+
+  なぜ作成するか？
+   エラーなどがあった場合、データベースに反映される前に
+   知ることができるため
+   作成したファイルはappディレクトリのmigrationsディ
+   レクトリに保存される
+ 
+ makemigrationsファイル
+  Migrationクラスで作成したモデルが定義される
+  例
+  class Migration(migrations.Migration):
+
+    initial = True
+
+    dependencies = [
+    ]
+
+    operations = [
+        migrations.CreateModel(
+            name='SampleModel',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('title', models.CharField(max_length=100)),
+                ('number', models.IntegerField()),
+            ],
+        ),
+    ]
+
+    operationsリストにモデルが定義されモデル名と各フィ
+    ールドが格納される
+
+ migrate
+  makemigrationsコマンドによって作成されたファイルの内容
+  に基づき、データベースに変更を反映させるために使われる
+  コマンド
+
+定義したモデルを管理画面に表示させる
+ appディレクトリのadminファイルにコードを書くことで
+ 管理画面に表示することができる
+
+ 具体的なコード
+  from .models import <定義したモデルクラス>
+  admin.site.register(定義したモデルクラス)
+
+signupViewで定義するform
+ CreateViewを使い、ModelFromを定義して簡単に、フォーム
+ にデータをモデルに保存することができる
+ 
+ コード例
+ from django.contrib.auth.forms 
+ import UserCreattionForm
+ from django.contrib.auth.models import User 
+
+ class SignupForm(UserCreationForm):
+     class Meta:
+         model = User 
+         fields = ('username')
+        
+ django.contrib.auth.formsからUserCreationFormを
+ インポート(Userを新しく作成することに特化したForm)
+
+ Userモデルをインポート、新しくユーザーが登録された際に
+ Userモデルにデータを追加することをDjangoに伝える
+
+ class Metaはクラスの実装とは関係ないときに使われる
+ このコードではform処理とは関係のないmodel処理を行うため
+ にMetaクラスを使用している
+ 
+reviewモデル作成
+from .consts import MAX_RATE
+RATE_CHOICES = [(x,str(x)) for x in range(0,MAX_RATE + 1)]
+
+class Review(models.Model):
+    book = models.ForeignKey(Book,on_delete=models.CASCADE)
+    title = models.CharField(max_length=100)
+    text = models.TextField()
+    rate = models.IntegerField(choices=RATE_CHOICES)
+    user = models.ForeignKey('auth.User',on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.title
+
+ ForeignKeyは違うモデル(データベーステーブル)のデータを
+ 使うときに使う。この例では、ReviewモデルがBookモデルの
+ データを参照するため、ForeingKeyを使っている。
+ もう一つの引数on_deleteは、参照先のデータが削除されたと
+ きのそのデータの処理方法を指定する。
+ models.CASCADE
+  これは、参照先のデータが削除された場合、対応するデータも
+  合わせて削除することを意味している。
+ 
+ rate = models.IntegerField(choices=RATE_CHOICES)
+ 一般的にDjangoでは、将来的に数字を変更する可能性がある
+ 場合には、定数用のファイルを作成し、その中で管理をする。
+ MAX_RATE = 5の場合、リスト型のデータとして、
+ [(0,'0'),(1,'1'),(2,'2'),(3,'3'),(4,'4'),(5,'5')]
+ が作成される
+
+
+
+ 

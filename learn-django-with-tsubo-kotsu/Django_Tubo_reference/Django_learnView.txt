@@ -1,0 +1,158 @@
+CRUDとは
+
+webフレームワークのデータを扱う仕組みの総称
+
+C : CREATE(作成)    CreateView
+R : READ(読み込み)  ListView DetailView
+U : UPDARE(更新)    UpdateView
+D : DELETE(削除)    DeleteView
+
+この４つの機能を中心として作成されており
+Djangoの中で定義するview(継承するviewクラス)はこの
+CURDの考え方に基づいている
+
+クラスメソッドビュー
+ モジュールをインポート
+ from django.views.generic import <継承するview>
+ modelsファイルをインポート
+ from .models import <モデル名>
+
+ クラスを作成し、インポートしたviewを継承
+
+ template_name変数を作成し、値にHTMLファイルを代入
+ template_name = <ディレクトリ>/<名称>.html
+
+ model変数を作成し、継承したモデルを値に代入
+ model = <モデル名>
+
+CreateView
+ createViewを継承したクラスでは、field変数を作成し、
+ モデルで作成した項目の文字列をタプルで代入
+ fields = ('項目名1','項目名2','項目名3')
+
+ cretateViewを継承したクラスでは、定義したモデルのデータ
+ をweb上で作成した後、web上の画面をどのURLに移動するか
+ 定義する。success_url変数を定義して、リダイレクトされる
+ URLを指定する
+ 
+ reverse_lazyモジュールをインポート
+ from django.urls import reverse_lazy
+
+ URLの定義方法
+  固定のURL文字列
+   例 success_url = '/url名/'
+  reverse_lazyを利用したURL名前付きパターン
+   例 success_url = reverse_lazy('list-book')
+  メソッドで動的に計算
+   フォームに入力されたデータに基づいて動的にリダイレクト
+   先を変更したい場合に使用
+   例　def get_success_url(self):の関数を作成
+
+DeleteViewでも、web上の画面のどのURLに転送するか定義する
+
+function-based view
+ 投稿日順で書籍を表示させると同時に、レビューの評価が高い順
+ でも書籍を表示するのような、複数のデータを組み合わせで表示
+ させる場合、function-base viewの方ができしている
+
+ render関数について
+  Djangoにおいて複数のデータを組み合わせて整理し、テンプレ
+  ートを用いて描画し、それをresponseオブジェクトとして返す
+  ということをしているのが、render関数
+
+  Django内部では、requestオブジェクトを受け取り、respon
+  seオブジェクトを返している。
+  render関数を使ってresponseオブジェクトを作成する
+  render関数の中身の例
+  def index_view(request):
+                       1           2
+      return render(request,'book/index.html',
+                            3
+                    {'somedata':100})
+   
+   1 : 最初の引数として必ず入れなければいけない。
+   　　 render関数を使うときは1つ目の引数はこれ
+   2 : templateを文字列で指定。class-base viewと同様
+       setting.pyファイルでDRISを指定しなければいけない
+   3 : 定義したファンクションviewにおいて使うデータを指定
+       する。この場合では、辞書型を使用している。ここで指定
+       するデータは、Djangoではcontextと呼ばれている
+
+ function-base viewでモデルを定義
+  object_list = モデル名.object.all()
+  変数object_listを定義して、継承したモデル名に
+  object.all()をつける
+  object モデルのテーブルい入っている全てのオブジェクトを
+         示している
+  モデル名.objectの後に様々なメソッドをつけることにより、
+  そのメソッドに応じた処理が行われる
+
+  objectの後につけるメソッド例
+  all()
+   モデルの全てのデータを取得
+  filter(条件)
+   指定した条件に一致するデータを取得
+  get(条件)
+   指定したデータに一致する単一のデータを取得
+  exclude(条件)
+   指定した条件を除外したデータを取得
+  order_by('並べ替えるデータ')
+   モデルに入っているデータを並べ変える際に使われる
+   
+viewの実装でのrenderとredirectの違い
+ render 
+  HttpResponseオブジェクトの作成に使われる
+ redirect
+  異なるviewを呼び出すために使われる。つまり、redirectは
+  何らかの処理を行なった上で違うviewを呼び出したい時に
+  使われる
+
+異なるモデルからデータを取得する(CreateView)
+ 異なるモデルからデータを取得するには、CreateViewに備わって
+ いるget_context_dataというメソッドを使う
+ 例
+ def get_context_data(self,**kwargs):
+ context = super().get.get_context_data(**kwargs)
+ context['book'] = Book.object.get(pk=self.kwargs['book_id'])
+ return context
+
+ def get_context_data(self,**kwargs):
+  CreateViewのget_context_dataを上書きしている
+ context変数は辞書型のデータ。このcontextに様々な情報を
+ 追加することで、必要な情報を呼び出すことができる。
+ **kwargsはキーワード引数であり、今回はurlに入力された数字
+ がキーワード引数としてviewに渡される。
+ context['book']は辞書型のデータにオブジェクトを追加する
+ ことを意味している。そして右側にどのオブジェクトを追加する
+ のかを書いている。
+ Book.object.get 
+  Bookモデルの中の全てのデータの中から、getメソッドで指定
+  したデータを取得するために用いられるコード
+
+ブラウザ上に表示させないモデルデータをCreateViewで定義する
+ def form_valid(self,form)メソッド
+ 例　
+ form.instance.user = self.request.user 
+ return super().form_valid(form)
+ 
+ form_validメソッドは、フォームが送信され、その入力内容に
+ 間違いがない場合に、データが保存される前に呼び出されるメソ
+ ッド。form.instance.user = self.requestというコードは
+ formのinstanceにuserという属性でデータを追加することを
+ 意味している。そして、self.request.userというコードは、
+ ユーザーがログインしている場合のrequestオブジェクトの中に
+ 入っているuser情報を意味している
+
+投稿したレビューを表示させる
+
+
+
+
+
+
+
+ 
+
+
+
+

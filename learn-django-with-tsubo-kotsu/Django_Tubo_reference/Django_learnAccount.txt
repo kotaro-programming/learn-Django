@@ -1,0 +1,148 @@
+Django アカウント
+
+Djangoが用意したauthアプリケーションには、会員登録のための
+機能は備わっていないため一から実装する必要がある
+
+ログイン機能について
+ ログイン機能を追加するには、フォームに入力された情報と、
+ データベースに入っているユーザーの情報を照合し、確認が取れ
+ たユーザーのみをログインさせるという仕組みを作る必要がある
+
+手順
+ 1 ユーザーがログイン情報を入力する
+ 2 入力された情報が適切かどうかを確認する
+ 3 あっている場合はログイン処理を行う
+ 
+ Djangoにはこのログインの仕組みを簡単に実現するための仕組み
+ があらかじめ用意されている
+ Djangoにはログイン、ログアウト、パスワード管理のためのview
+ があらかじめ用意されている
+
+Djangoのビルトインの認証ホームを使用する方法
+ 認証機能が実装されているviewを呼び出す必要がある
+ urlpatterns = [
+    path('accounts/',include(
+                     'django.contrib.auth.urls')),
+ ]
+ このコードによってプロジェクトディレクトリのurls.pyから
+ authアプリケーションのurls.pyファイルを呼び出すことが
+ できる
+ これにより例えば、accounts/logout/にアクセスすれば、
+ Djangoが用意しているviewにもとづいてviewが実行され、
+ ログアウトさせるための処理が行われる。
+ だが、view以外の部分は自分で作成する必要がある場合もある
+ 例template
+
+templatesの作成
+プロジェクト直下のtemplateディレクトリにregistration
+ディレクトリを作成し、そこに認証ホーム用のhtmlファイルを
+作成する
+
+ログインが完了した後のURLにアクセスするための設定
+setting.pyにLOGIN_REDIRECT_URL変数を定義
+例
+LOGIN_REDIRECT_URL = '<viewで定義したview名>'
+
+ログアウト機能をfunction-base viewで実装
+ appのurls.pyにurlを定義
+ 例
+ path('logout'/,views.view名,name='')
+
+ views.pyにログアウト関数を定義
+  モジュールをインポート
+  from django.contrib.auth import logout
+  関数を定義
+  def logout_view(request):
+      logout(request)
+      return redirect('urls.pyで定義したview名')
+
+ログイン ログアウトのリンクをトップページに追加
+ if文でログイン、ログアウトを切り替えて実装
+ 例
+ {% if request.user.is_authenticated %}
+   ログアウトリンク
+ {% else %}
+   ログインリンク
+ {% endif %}
+
+ request.user.is_authenticatedについて
+ requestオブジェクトのuserという情報は、viewを呼び出して
+ requestオブジェクトを作成したときユーザー情報があれば、
+ そのユーザーの情報が表示される
+ is_authenticatedはユーザーがログインしているかを判別する
+ ためのbool値
+ そのためこのコードはユーザーがログインしている時にTrueと
+ なる
+
+urls.pyでpathに個別でviewを呼び出す場合
+ モジュールをインポート
+ from django.contrib.auth.vieww import View名　
+ View名の例
+ LoginView,LogoutView
+
+accounts appのviewに会員登録viewを定義
+ モジュールをインポート
+ from django.shortcuts import render
+ from django.contrib.auth.models import User 
+ from django.urls import reverse_lazy
+ from django.views.generic import CreateView
+
+ form.pyから定義したformをインポート
+ form .forms import form名
+
+ class Viewでviewを定義
+ class SingnupView(CreateView):
+     model = User 
+     form_class = SignupForm 
+     template_name = 'accounts/signup.html'
+     success_url = reverse_lazy('index')
+
+signupViewで定義するform
+ CreateViewを使い、ModelFromを定義して簡単に、フォーム
+ にデータをモデルに保存することができる
+
+ accounts appにforms.pyを作成
+ 
+ログイン状態を判定する
+ ログイン状態で操作、表示できる範囲を変更する
+
+ Mixin ログイン状態を処理する方法
+  class-baed viewで何らかの機能を追加する際に使うもの、
+  今まで実装してきたviewのように、継承させる形で実装
+ 
+  ログインしている場合のみviewを表示させる方法
+   views.pyに、
+   from django.contrib.auth.mixins import 
+   LoginRequireMixin
+   でLoginRequireMixinをインポート
+
+   ログインしている場合のみ表示させるviewに
+   LoginRequireMixinを継承(最初に継承させる)
+   Mixinは継承の中でも優先順位が高い
+   ログインしていない場合に移動させるベージはデフォルトでは、
+   accouts/loginとなっているが、これを変更するには、
+   setting.pyファイルでLOOGIN_URLを定義する
+   ログイン後に移動させるページは、LOGIN_REDIRECT_URLで
+   定義する
+
+  自分で投稿したデータしか編集できないようにする仕組みを実装
+   models.pyのモデルに
+   user = models.ForeignKey('auth.User',
+                         on_delete=models.CASCADE)
+   を追加し、モデルデータにユーザー情報を紐ずける
+   makemigrationsを実行し、1を選択する
+
+   編集するviewにget_object関数を追加する
+   def get_object(self,queryset=None):
+       obj = super().get_object(queryset)
+       if obj.user != self.request.user:
+           raise PermissionDenied
+       return obj 
+   この関数により、user以外が編集しようとするとエラーが出る
+   ようにできる
+
+
+
+
+
+

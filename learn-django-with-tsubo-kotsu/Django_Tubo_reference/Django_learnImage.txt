@@ -1,0 +1,73 @@
+Djangoaに画像を表示させる/cssの設定
+
+※画像はDjango内部ではなく、webサーバーで処理することが一般
+ 的。下記の方法は、あくまで開発環境において用いられる手法で
+ あり、本番環境では使うべきではない。
+
+モデルに画像を扱うためのフィールドを追加する
+thumbnail = models.ImageField()
+
+ImageFieldをmigrateする場合、Pillowをインストールしなけ
+ればならない
+pip install pillow
+
+ImageFieldをmigrateする場合、その際今までに作ったデータに
+ついてはどういった画像を使いますか？という質問が来るため
+その設定をしなければならない。
+models.ImageField(null=True,blank=True)
+ここでは、引数をこのように指定し、データベースとフォームに
+入力されたデータが空でも許容するように設定する
+null:データベース　blank:フォーム
+
+画像を表示させるに必要なこと
+ Djangoに画像を保存する場所を指示する
+ urlpatternsに合わせて画像を呼び出すことができる仕組みを
+ 整える
+
+画像ファイルを保存する場所を指定する
+ DjangoではデフォルトでBASE_DIRに画像が保存されるが、
+ BASE_DIRに画像を保存していくと、画像が増えるにつれてディ
+ レクトリの中が乱雑で分かりにくくなるため、画像保存用のディ
+ レクトリを作成し、そこに画像ファイルが保存されるようにする
+ 画像ファイルは、setting.pyで指定する
+
+画像ファイルは、setting.pyで指定する
+ MEDIA_URL = '/media/'  画像ファイルを呼び出すURL
+ MEDIA_ROOT = BASE_DIR / 'media'
+
+対象の画像を呼び出すには、urls.pyで設定しなければならない。
+ 画像とurlを結びつける
+ 例 
+ from django.conf import settings
+ from django.conf.urls.static import static
+ urlpatterns += static(settings.MEDIA_URL,
+                document_root=settings.MEDIA_ROOT)
+ urlpatternsにstaticメソッドを使い、settings.pyで指定
+ したMEDIA_URLとMEDIA_ROOTを引数に指定し、urlに画像を
+ 結びつける
+
+画像やファイルアップロードを扱う時には、formタグに、
+enctypeを指定する必要がある
+enctypeの種類
+ application/x-www-form-urlencoded	
+  デフォルトのエンコーディング。通常のフォームデータ
+  （テキストや数値など）を送信する際に使用。
+ multipart/form-data	
+  ファイルアップロード時に使用。バイナリデータ（画像、PDFなど）を含む場合に必要。
+ text/plain	
+  データをプレーンテキストとして送信するが、ほとんど使われない。
+
+DjangoでのCSSの設定
+ STATIC_URLを定義(デフォルトで定義してある)
+ htmlファイルの中に{% load static %}というタグを追加
+ 例
+ <link rel="stylesheet" type="text/css"
+  href="{% static 'book/css/style.css' %}"> 
+ このようにheadにcssファイルのurlを指定
+
+ setting.pyのmediaとstaticの違い
+  大まかに言って、ユーザーがアップロードする画像がmedia、
+  システム開発時に開発者がアップロードする画像やcssファイル
+  がstatic
+
+

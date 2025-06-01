@@ -1,0 +1,128 @@
+Djangoでアプリケーションサイトを制作する流れ
+
+環境構築
+
+仮想環境をとDjangoプロジェクトを作成するファイルディレ
+クトリを作成
+
+仮想環境を作成 
+python3 -m venv <仮想環境名>
+
+仮想環境に入る
+source <仮想環境名>/bin/activate
+
+Djangoをインストール　
+pip install django==<Djangoのバージョン>
+
+Djangoのプロジェクトを作成
+django-admin startproject <プロジェクト名>
+
+作成したディレクトリに移動しアプリを作成
+python3 manage.py startapp <app名>
+
+
+Webサイトの作成
+
+プロジェクトのurlsにアプリのurlsへのルーティングを設置
+from django.urls import path,include
+ urlsモジュールにincludeを追加
+
+path('',include('<app名>.urls')),
+ urlpatternsにアプリへのルーティングを設置
+
+プロジェクトのsettingに作成したアプリを認識させる
+'book.apps.BookConfig',
+ INSTALLED_APPに書き込む
+
+HTMLファイルが入っている場所を認識させる
+settingファイルのTEMPLATESの'DRIS'に
+'DIRS': [BASE_DIR / 'templates'],
+BASE_DIR/ 'templates'を書き込む
+
+アプリディレクトリにurlsファイルを作成し
+urlpatterns = []
+このようにurlpatternsにリストを定義
+
+アプリディレクトリのmodelsファイルでモデルを定義
+models.Modelsを継承したモデルクラスを作成
+モデルクラスを作成したら、makemigrationsとmigrateで
+モデルをデータベースに反映
+
+管理画面のユーザーテーブルを確認するため
+コマンドでユーザー名とパスワードを作成
+createsuperuser
+
+定義したモデルを管理画面に表示させる
+アプリディレクトリのadminファイルにアプリディレクトリの
+modelsファイルをインポートし適応
+from .models import <定義したモデルクラス>
+admin.site.register(定義したモデルクラス)
+
+appディレクトリのurlsファイルのurlpatternにpathでurlを
+配置し、定義するviewを指定
+
+appディレクトリのviewsファイルにviewを定義
+
+templateの作成
+webサイト全体で共通するレイアウトのbase.htmlは、プロジ
+ェクトのルートディレクトリに作成したフォルダに配置
+
+各アプリのテンプレートは、base.htmlを継承した形で作成
+ディレクトリは各appディレクトリにTemplatesディレクトリを
+作成しそこに作成
+
+Djangoページネーションとは
+ ページネーションとは、データが複数ある場合に、ページごとに
+ 表示させるデータを制御する機能
+ 例えば、ブログなどでは記事の数が、数百、数千になることがある
+ そうした場合にページネーションの機能をつけることで、10個ずつ
+ 記事を表示するといったことが可能になる
+
+ function-based viewにおけるページネーション
+ 例　
+ def index_view(request):
+    object_list = Book.objects.order_by('-id')
+    ranking_list = Book.objects.annotate(avg_rating=Avg('review__rate')).order_by('-avg_rating')
+
+    paginator = Paginator(ranking_list,ITEM_PER_PAGE)
+    page_number = request.GET.get('page',1)
+    page_obj = paginator.page(page_number)
+    return render(request,
+                  'book/index.html',
+                  {'object_list':object_list,
+                   'ranking_list':ranking_list,
+                   'page_obj':page_obj},
+                   )
+
+  paginator = Paginator(ranking_list,ITEM_PER_PAGE)
+  これは、Djangoが用意しているPaginatorクラスからオブジェ
+  クトを用意
+  ITEM_PER_PAGEは1つのページに表示する書籍の数を指定する
+  ために定義(値が変わる可能性があるため、consts.pyファイル
+  でまとめる)
+
+  page_number = request.GET.get('page',1)
+  これは、URLのクエリパラメーターからページの番号を取得する
+  コード。request.GETでURLのパラメーターを辞書型のデータ
+  として取得できる。さらにgetを付けると、検索をしたデータが
+  なかった場合に用いるデフォルトのパラメータを設定することが
+  できる
+
+  page_obj = paginator.page(page_number)
+  これは、引数で指定したページのオブジェクトを格納するための
+  コード。例えば、データの数が5つあった場合に、2つごとにペー
+  ジを区切るとページネーションの対象は3ページになり、その中
+  でpage_numberで指定したものが、page_objという変数の中
+  に入る
+
+  ページネーションのように、多くのページで使い回すことができ
+  るコードは、componentsというディレクトリを作成し、その中
+  にコードを保管すると管理がしやすくなる
+  
+
+
+
+
+
+
+

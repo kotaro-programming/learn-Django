@@ -1,0 +1,42 @@
+URLについて
+
+projectディレクトリとappディレクトリのurlsファイル
+ urlsファイルは、主にprojectディレクトリとappディレクト
+ リに別れており、最初にprojectのurlsファイルを経由して
+ 各appのurlsファイルに送られる
+
+projectディレクトリurlsの定義
+
+appディレクトリのurlsの定義
+ djangoのurlsクラスからpathをインポート
+ from django.urls import path
+
+ appディレクトリのviewsファイルをインポート
+  from . import views
+
+ urlpatternsの変数のリストを作成し、そのリストに
+ urlを定義
+  urlpatterns = [
+    #クラスメソッドviewの場合
+    path('リンク名/',views.<viewクラス名>.as_view()),
+  ]
+
+pathで定義したurlのviewに名前を設定する
+ path('リンク名/',views.<viewクラス名>.as_view()
+ 　　　,name='viewの名前')
+
+DetailView,DeleteView
+ モデルのデータを表示する場合、個別のデータを指定する必要
+ がある
+ urls.pyのpathで指定する
+ 例
+ path('book/<int:pk>/detail/..)
+ int型のprimary keyを指定
+
+urls.pyにapp_nameを定義する
+ templateでurlを指定するときにどのappのurlなのかを識別
+ するために定義
+ 例
+ app_name = 'app名'
+
+
